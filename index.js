@@ -1,3 +1,4 @@
+require('newrelic');
 var AWS = require('aws-sdk');
 var trumpet = require('trumpet');
 
