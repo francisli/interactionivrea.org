@@ -71,9 +71,11 @@ app.get('/*', function(req, res) {
 							return;
 						}
 					}
+					res.render('index', { src: req.url });
 				});
+			} else {
+				res.render('index', { src: req.url });
 			}
-			res.render('index', { src: req.url });
 		} else {
 			res.type(data.ContentType);
 			s3.getObject(params).createReadStream().pipe(res);
