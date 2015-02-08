@@ -50,41 +50,53 @@ app.get('/proxy-body.html', function(req, res) {
 	
 	var s3 = new AWS.S3();
 	var tr = trumpet();
+	tr.selectAll('script', function(elem){
+		elem.getAttribute('src', function(value) {
+			if (typeof value !== "undefined" && value !== null) {
+				elem.setAttribute('src', fixURL(req, value));
+			}
+		});
+	});
 	tr.selectAll('img', function(elem){
 		elem.getAttribute('src', function(value) {
-			if (value != null) {
+			if (typeof value !== "undefined" && value !== null) {
 				elem.setAttribute('src', fixURL(req, value));
 			}
 		});
 	});
 	tr.selectAll('link', function(elem){
 		elem.getAttribute('href', function(value) {
-			if (value != null) {
+			if (typeof value !== "undefined" && value !== null) {
 				elem.setAttribute('href', fixURL(req, value));
 			}
 		});
 	});
 	tr.selectAll('table', function(elem){
 		elem.getAttribute('background', function(value) {
-			if (value != null) {
+			if (typeof value !== "undefined" && value !== null) {
 				elem.setAttribute('background', fixURL(req, value));
 			}
 		});
 	});
 	tr.selectAll('a', function(elem){
 		elem.getAttribute('href', function(value) {
-			if (value != null) {
+			if (typeof value !== "undefined" && value !== null) {
 				elem.setAttribute('href', fixURL(req, value));
 			}
 		});
 		elem.getAttribute('target', function(value) {
-			if (value == null) {
+			if (typeof value == "undefined" || value == null) {
 				elem.setAttribute('target', '_top');
 			}
 		});
 	});
 	res.type('html');
-	s3.getObject(params).createReadStream().pipe(tr).pipe(res);
+	s3.getObject(params).createReadStream().pipe(tr).on('data', function(chunk) {
+		if (chunk.toString().toLowerCase() == '</html>') {
+			res.write(chunk);
+			res.end();
+		}
+	}).pipe(res);
 });
 
 app.get('/*', function(req, res) {
