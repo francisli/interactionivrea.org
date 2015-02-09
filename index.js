@@ -140,7 +140,10 @@ app.get('/*', function(req, res) {
 		if (key.lastIndexOf('/index.html') != (key.length - 11))  {
 			key = key + '/index.html';
 			params.Key = key;
-			return headObject(params);
+			return headObject(params).fail(function(err) {
+				res.status(err.statusCode);
+				res.send(err.code);
+			});
 		} else {
 			res.status(err.statusCode);
 			res.send(err.code);
