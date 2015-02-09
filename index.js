@@ -149,7 +149,9 @@ app.get('/*', function(req, res) {
 			res.send(err.code);
 		}
 	}).then(function(data) {
-		if (data.ContentType == 'text/html') {
+		if ((key.toLowerCase().lastIndexOf('.html') == (key.length - 5)) ||
+		    (key.toLowerCase().lastIndexOf('.asp') == (key.length - 3)) ||
+		    (data.ContentType == 'text/html')) {
 			if (parseInt(data.ContentLength) < 1024) {
 				var s3 = new AWS.S3();
 				s3.getObject(params).send(function(err, data) {
@@ -161,9 +163,11 @@ app.get('/*', function(req, res) {
 							return;
 						}
 					}
+					res.type('html');
 					res.render('index', { src: key });
 				});
 			} else {
+				res.type('html');
 				res.render('index', { src: key });
 			}
 		} else {
