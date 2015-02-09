@@ -1,5 +1,6 @@
 require('newrelic');
 var AWS = require('aws-sdk');
+var Q = require('q');
 var trumpet = require('trumpet');
 
 var express = require('express');
@@ -38,19 +39,19 @@ app.get('/proxy-body.html', function(req, res) {
 			bucket = parts[0] + '.interactionivrea.org';
 		}
 	}
-
-	var key = unescape(req.query.src);
-	if (key == '/') {
-		key = 'index.html';
-	} else if (key.charAt(0) == '/') {
-		key = key.substring(1);
-	}
 	
-	var params = { Bucket: bucket, Key: key }
+	var params = { Bucket: bucket, Key: req.query.src }
 	
 	var s3 = new AWS.S3();
 	var tr = trumpet();
 	tr.selectAll('script', function(elem){
+		elem.getAttribute('src', function(value) {
+			if (typeof value !== "undefined" && value !== null) {
+				elem.setAttribute('src', fixURL(req, value));
+			}
+		});
+	});
+	tr.selectAll('embed', function(elem){
 		elem.getAttribute('src', function(value) {
 			if (typeof value !== "undefined" && value !== null) {
 				elem.setAttribute('src', fixURL(req, value));
@@ -99,6 +100,20 @@ app.get('/proxy-body.html', function(req, res) {
 	}).pipe(res);
 });
 
+function headObject(params) {
+	console.log('Head:', params);
+	var deferred = Q.defer();
+	var s3 = new AWS.S3();
+	s3.headObject(params, function(err, data) {
+		if (typeof err !== "undefined" && err !== null) {
+			deferred.reject(err);
+		} else {
+			deferred.resolve(data);
+		}
+	});
+	return deferred.promise;
+}
+
 app.get('/*', function(req, res) {
 	console.log('Host:', req.headers.host);
 	console.log('Path:', req.url);
@@ -112,27 +127,28 @@ app.get('/*', function(req, res) {
 	}
 
 	var key = unescape(req.url);
-	if (key == '/') {
-		key = 'index.html';
-	} else if (key.charAt(0) == '/') {
+	if (key.charAt(key.length - 1) == '/') {
+		key = key + 'index.html';
+	}
+	if (key.charAt(0) == '/') {
 		key = key.substring(1);
 	}
 	
 	var params = { Bucket: bucket, Key: key }
 	
-	var s3 = new AWS.S3();
-	s3.headObject(params, function(err, data) {
-		if (typeof err !== "undefined" && err !== null) {
-			if (req.url.charAt(req.url.length - 1) == '/') {
-				res.redirect(302, req.url + 'index.html');
-			} else if (req.url.indexOf('/it/') == 0) {
-				res.redirect(302, '/en/' + req.url.substring(4));
-			} else {
-				res.status(err.statusCode);
-				res.send(err.code);
-			}
-		} else if (data.ContentType == 'text/html') {
+	headObject(params).fail(function(err) {
+		if (key.lastIndexOf('/index.html') != (key.length - 11))  {
+			key = key + '/index.html';
+			params.Key = key;
+			return headObject(params);
+		} else {
+			res.status(err.statusCode);
+			res.send(err.code);
+		}
+	}).then(function(data) {
+		if (data.ContentType == 'text/html') {
 			if (parseInt(data.ContentLength) < 1024) {
+				var s3 = new AWS.S3();
 				s3.getObject(params).send(function(err, data) {
 					var html = data.Body.toString();
 					if (html.indexOf('<head><title>Object moved</title></head>') >= 0) {
@@ -142,13 +158,14 @@ app.get('/*', function(req, res) {
 							return;
 						}
 					}
-					res.render('index', { src: req.url });
+					res.render('index', { src: key });
 				});
 			} else {
-				res.render('index', { src: req.url });
+				res.render('index', { src: key });
 			}
 		} else {
 			res.type(data.ContentType);
+			var s3 = new AWS.S3();
 			s3.getObject(params).createReadStream().pipe(res);
 		}
 	});

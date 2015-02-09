@@ -11,6 +11,7 @@
     "express": "~4.9.x",
     "jade": "^1.9.2",
     "newrelic": "^1.16.1",
+    "q": "^1.1.2",
     "trumpet": "^1.7.0"
   },
   "engines": {
