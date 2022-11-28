@@ -1,4 +1,3 @@
-require('newrelic');
 var AWS = require('aws-sdk');
 var Q = require('q');
 var trumpet = require('trumpet');
@@ -181,55 +180,3 @@ app.get('/*', function(req, res) {
 app.listen(app.get('port'), function() {
   console.log("Node app is running on port:" + app.get('port'));
 });
-
-/*
-require 'simple_html_dom.php';
-
-function fixurl($href) {
-  if (strpos($href, 'http') === 0) {
-    $href = str_replace('interaction-ivrea.it', 'interactionivrea.org', $href);
-  } else if (strpos($href, '/') === 0) {
-
-  } else {
-    $pos = strrpos($_GET['dest'], '/');
-    if ($pos !== false) {
-      $href = '../' . substr($_GET['dest'], 0, $pos) .'/'. $href;
-    } else {
-      $href = '../' . $href;
-    }
-  }
-  return $href;
-}
-
-$html = file_get_html('../'. $_SERVER["HTTP_HOST"] .'/'. $_GET['dest']);
-
-if (trim($html->find('title', 0)->plaintext) == 'Object moved') {
-  $html->find('head', 0)->innertext =
-    "<META http-equiv=\"refresh\" content=\"0;URL=javascript:window.open('" .
-    fixurl($html->find('a', 0)->href) .
-    "','_top');\">" .
-    $html->find('head', 0)->innertext;
-}
-
-foreach ($html->find('a') as $e) {
-  $e->target='_top';
-  $e->href = fixurl($e->href);
-}
-
-foreach ($html->find('link') as $e) {
-  $e->href = fixurl($e->href);
-}
-
-foreach ($html->find('img') as $e) {
-  $e->src = fixurl($e->src);
-}
-
-if (strpos(($html->find('title', 0)->plaintext), 'Index of') === 0) {
-  $pre = str_get_html($html->find('pre', 0)->plaintext);
-  foreach ($pre->find('a') as $e) {
-    $e->target='_top';
-    $e->href = fixurl($e->href);
-  }
-  $html->find('pre', 0)->innertext = $pre;
-}
-*/
