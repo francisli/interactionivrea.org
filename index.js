@@ -15,6 +15,11 @@ app.get('/proxy-header.html', function(req, res) {
 
 var buckets = [ 'courses', 'instantsoup', 'milano', 'people', 'projects', 'projectsfinal' ];
 
+var options = {
+	accessKeyId: process.env.APP_AWS_ACCESS_KEY_ID,
+	secretAccessKey: process.env.APP_AWS_SECRET_ACCESS_KEY
+};
+
 function fixURL(req, url) {
 		if (url.indexOf('http') == 0) {
 		url = url.replace('interaction-ivrea.it', 'interactionivrea.org');
@@ -41,7 +46,7 @@ app.get('/proxy-body.html', function(req, res) {
 	
 	var params = { Bucket: bucket, Key: req.query.src }
 	
-	var s3 = new AWS.S3();
+	var s3 = new AWS.S3(options);
 	var tr = trumpet();
 	tr.selectAll('script', function(elem){
 		elem.getAttribute('src', function(value) {
@@ -102,7 +107,7 @@ app.get('/proxy-body.html', function(req, res) {
 function headObject(params) {
 	console.log('Head:', params);
 	var deferred = Q.defer();
-	var s3 = new AWS.S3();
+	var s3 = new AWS.S3(options);
 	s3.headObject(params, function(err, data) {
 		if (typeof err !== "undefined" && err !== null) {
 			deferred.reject(err);
@@ -152,7 +157,7 @@ app.get('/*', function(req, res) {
 		    (key.toLowerCase().lastIndexOf('.asp') == (key.length - 3)) ||
 		    (data.ContentType == 'text/html')) {
 			if (parseInt(data.ContentLength) < 1024) {
-				var s3 = new AWS.S3();
+				var s3 = new AWS.S3(options);
 				s3.getObject(params).send(function(err, data) {
 					var html = data.Body.toString();
 					if (html.indexOf('<head><title>Object moved</title></head>') >= 0) {
@@ -171,7 +176,7 @@ app.get('/*', function(req, res) {
 			}
 		} else {
 			res.type(data.ContentType);
-			var s3 = new AWS.S3();
+			var s3 = new AWS.S3(options);
 			s3.getObject(params).createReadStream().pipe(res);
 		}
 	});
